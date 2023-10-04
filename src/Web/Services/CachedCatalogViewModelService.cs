@@ -38,7 +38,16 @@ public class CachedCatalogViewModelService : ICatalogViewModelService
             return await _catalogViewModelService.GetCatalogItems(pageIndex, itemsPage, brandId, typeId);
         })) ?? new CatalogIndexViewModel();
     }
+    public async Task<CatalogIndexViewModel> GetCatalogItemsFiltered(int pageIndex, int itemsPage, int? brandId, int? typeId, string? textFilter)
+    {
+        var cacheKey = CacheHelpers.GenerateCatalogItemFilteredCacheKey(pageIndex, Constants.ITEMS_PER_PAGE, brandId, typeId, textFilter ?? String.Empty);
 
+        return (await _cache.GetOrCreateAsync(cacheKey, async entry =>
+        {
+            entry.SlidingExpiration = CacheHelpers.DefaultCacheDuration;
+            return await _catalogViewModelService.GetCatalogItemsFiltered(pageIndex, itemsPage, brandId, typeId, textFilter);
+        })) ?? new CatalogIndexViewModel();
+    }
     public async Task<IEnumerable<SelectListItem>> GetTypes()
     {
         return (await _cache.GetOrCreateAsync(CacheHelpers.GenerateTypesCacheKey(), async entry =>

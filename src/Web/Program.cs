@@ -20,7 +20,16 @@ using Microsoft.eShopWeb.Web.HealthChecks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 var builder = WebApplication.CreateBuilder(args);
+
 builder.Logging.AddConsole();
+
+// debug hack for appSettings in config not being picked up in vscode launch mode but are in attach process mode.
+// sp launch from separate dotnet run console. 
+if (!String.IsNullOrEmpty(System.Environment.GetEnvironmentVariable("VISUALSTUDIOCODEDEBUG", System.EnvironmentVariableTarget.Process))) 
+{
+    Console.WriteLine("Attach Visual Studio Code Debugger...Then press a key to continue.");
+    var _ = Console.ReadLine();
+}
 
 if (builder.Environment.IsDevelopment() || builder.Environment.EnvironmentName == "Docker"){
     // Configure SQL Server (local)
@@ -197,6 +206,26 @@ app.MapHealthChecks("home_page_health_check", new HealthCheckOptions { Predicate
 app.MapHealthChecks("api_health_check", new HealthCheckOptions { Predicate = check => check.Tags.Contains("apiHealthCheck") });
 //endpoints.MapBlazorHub("/admin");
 app.MapFallbackToFile("index.html");
+
+// Dev.
+// stick in a  developer stop route on a Get.
+// just a code snippet for test of useage of the lifetime interface
+app.MapGet("/stop", (IHostApplicationLifetime lifetime) =>
+{
+
+    lifetime.ApplicationStopping.Register(() =>
+    {
+        Console.WriteLine($"{(DateTime.UtcNow):u} Application is stopping");
+    });
+    lifetime.ApplicationStopped.Register(() =>
+    {
+        Console.WriteLine($"{(DateTime.UtcNow):u} Application has stopped");
+    });
+    lifetime.StopApplication();
+    // can we attempt a result before the apps stops?
+    return new {message = "goodbye"};
+});
+// 
 
 app.Logger.LogInformation("LAUNCHING");
 app.Run();

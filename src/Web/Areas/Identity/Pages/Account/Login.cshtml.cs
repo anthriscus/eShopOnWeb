@@ -16,12 +16,14 @@ public class LoginModel : PageModel
     private readonly SignInManager<ApplicationUser> _signInManager;
     private readonly ILogger<LoginModel> _logger;
     private readonly IBasketService _basketService;
-
-    public LoginModel(SignInManager<ApplicationUser> signInManager, ILogger<LoginModel> logger, IBasketService basketService)
+    
+    public string LastWho { get; private set; } // try out IHosting methods
+    public LoginModel(SignInManager<ApplicationUser> signInManager, ILogger<LoginModel> logger, IBasketService basketService,IConfiguration config)
     {
         _signInManager = signInManager;
         _logger = logger;
         _basketService = basketService;
+        LastWho = config["lastwho"]?? String.Empty;  // try out IHosting methods
     }
 
     [BindProperty]

@@ -1,0 +1,11 @@
+{
+  "Products": [
+    {
+      "ProductId": "1",
+      "CatalogTypeId": "1",
+      "CatalogBrandId": "2",
+      "Name": "foo test data",
+      "Description": "foo test data description",
+      "Price": "419"
+    }]
+}

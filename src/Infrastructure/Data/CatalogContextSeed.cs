@@ -1,7 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Microsoft.eShopWeb.ApplicationCore.Entities;
 using Microsoft.Extensions.Logging;
 
@@ -40,7 +44,7 @@ public class CatalogContextSeed
             if (!await catalogContext.CatalogItems.AnyAsync())
             {
                 await catalogContext.CatalogItems.AddRangeAsync(
-                    GetPreconfiguredItems());
+                    GetPreconfiguredItems(logger));
 
                 await catalogContext.SaveChangesAsync();
             }
@@ -80,9 +84,28 @@ public class CatalogContextSeed
             };
     }
 
-    static IEnumerable<CatalogItem> GetPreconfiguredItems()
+    static IEnumerable<CatalogItem> GetPreconfiguredItems(ILogger logger)
     {
-        return new List<CatalogItem>
+        var l = SeedJsonCatalog(logger);
+        l.AddRange(new List<CatalogItem>
+            {
+                new(2,2, ".NET Bot Black Sweatshirt", ".NET Bot Black Sweatshirt", 19.5M,  "http://catalogbaseurltobereplaced/images/products/1.png"),
+                new(1,2, ".NET Black & White Mug", ".NET Black & White Mug", 8.50M, "http://catalogbaseurltobereplaced/images/products/2.png"),
+                new(2,5, "Prism White T-Shirt", "Prism White T-Shirt", 12,  "http://catalogbaseurltobereplaced/images/products/3.png"),
+                new(2,2, ".NET Foundation Sweatshirt", ".NET Foundation Sweatshirt", 12, "http://catalogbaseurltobereplaced/images/products/4.png"),
+                new(3,5, "Roslyn Red Sheet", "Roslyn Red Sheet", 8.5M, "http://catalogbaseurltobereplaced/images/products/5.png"),
+                new(2,2, ".NET Blue Sweatshirt", ".NET Blue Sweatshirt", 12, "http://catalogbaseurltobereplaced/images/products/6.png"),
+                new(2,5, "Roslyn Red T-Shirt", "Roslyn Red T-Shirt",  12, "http://catalogbaseurltobereplaced/images/products/7.png"),
+                new(2,5, "Kudu Purple Sweatshirt", "Kudu Purple Sweatshirt", 8.5M, "http://catalogbaseurltobereplaced/images/products/8.png"),
+                new(1,5, "Cup<T> White Mug", "Cup<T> White Mug", 12, "http://catalogbaseurltobereplaced/images/products/9.png"),
+                new(3,2, ".NET Foundation Sheet", ".NET Foundation Sheet", 12, "http://catalogbaseurltobereplaced/images/products/10.png"),
+                new(3,2, "Cup<T> Sheet", "Cup<T> Sheet", 8.5M, "http://catalogbaseurltobereplaced/images/products/11.png"),
+                new(2,5, "Prism White TShirt", "Prism White TShirt", 12, "http://catalogbaseurltobereplaced/images/products/12.png")
+        });
+        return l;
+        /*
+        return 
+            new List<CatalogItem>
             {
                 new(2,2, ".NET Bot Black Sweatshirt", ".NET Bot Black Sweatshirt", 19.5M,  "http://catalogbaseurltobereplaced/images/products/1.png"),
                 new(1,2, ".NET Black & White Mug", ".NET Black & White Mug", 8.50M, "http://catalogbaseurltobereplaced/images/products/2.png"),
@@ -97,5 +120,58 @@ public class CatalogContextSeed
                 new(3,2, "Cup<T> Sheet", "Cup<T> Sheet", 8.5M, "http://catalogbaseurltobereplaced/images/products/11.png"),
                 new(2,5, "Prism White TShirt", "Prism White TShirt", 12, "http://catalogbaseurltobereplaced/images/products/12.png")
             };
+        */
+    }
+    /// <summary>
+    /// Quick and dirty grab some more test seeded data from a json file. 
+    /// For interactive testing, to pad out the browseable results list with more items for trying pagination and searches.
+    /// </summary>
+    private static List<CatalogItem> SeedJsonCatalog(ILogger logger) 
+    {
+        string? su = System.Environment.GetEnvironmentVariable("HOME", System.EnvironmentVariableTarget.Process);
+        string? sw = System.Environment.GetEnvironmentVariable("USERPROFILE", System.EnvironmentVariableTarget.Process);
+        string? folder = String.IsNullOrEmpty(su) ? sw : su;
+        string uri =  System.IO.Path.Combine($"{(folder ?? String.Empty)}","products.json");
+        string defProduct = "http://catalogbaseurltobereplaced/images/products/10.png";
+        var l = new List<CatalogItem>();
+
+        var products = GetData<ProductList>(uri, logger);
+        if (products != null)
+        {            
+            products.Products.ForEach(new Action<Product>( (p) =>{
+                l.Add(new CatalogItem(p.CatalogTypeId, p.CatalogBrandId, p.Description, p.Name, p.Price, defProduct));
+            }));
+        }
+        return l;
+    }
+    /// <summary>
+    /// Quick and dirty json file thing...
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="uri"></param>
+    /// <returns></returns>
+    static T GetData<T>(string uri, ILogger logger)
+    {
+        try
+        {
+            logger.LogInformation($"Seeding Database...looking for [{uri}]");
+            if (File.Exists(uri))
+            {
+                using (var fs = new FileStream(uri, FileMode.Open, FileAccess.Read))
+                {
+                    return JsonSerializer.Deserialize<T>(fs);
+                }
+            }
+            else
+            {
+                logger.LogInformation($"Seeding Database...not found [{uri}]");
+                return default(T);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            return default(T);
+        }
     }
 }

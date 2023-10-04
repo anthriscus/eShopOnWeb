@@ -173,6 +173,27 @@ app.UseSwaggerUI(c =>
 });
 
 app.MapControllers();
+
+// Dev.
+// stick in a  developer stop route on a Get.
+// just a code snippet for test of useage of the lifetime interface
+app.MapGet("/api/stop", (IHostApplicationLifetime lifetime) =>
+{
+
+    lifetime.ApplicationStopping.Register(() =>
+    {
+        Console.WriteLine($"{(DateTime.UtcNow):u} Application is stopping");
+    });
+    lifetime.ApplicationStopped.Register(() =>
+    {
+        Console.WriteLine($"{(DateTime.UtcNow):u} Application has stopped");
+    });
+    lifetime.StopApplication();
+    // can we attempt a result before the apps stops?
+    return new { message = "goodbye" };
+});
+
+
 app.MapEndpoints();
 
 app.Logger.LogInformation("LAUNCHING PublicApi");

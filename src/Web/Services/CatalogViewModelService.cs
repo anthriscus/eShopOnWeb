@@ -76,6 +76,46 @@ public class CatalogViewModelService : ICatalogViewModelService
 
         return vm;
     }
+    // Try out Added an additional text filter param here.
+    public async Task<CatalogIndexViewModel> GetCatalogItemsFiltered(int pageIndex, int itemsPage, int? brandId, int? typeId, string? textFilter)
+    {
+        _logger.LogInformation("GetCatalogItems called.");
+
+        var filterSpecification = new CatalogFilterTextSpecification(textFilter ?? string.Empty, brandId, typeId);
+        var filterPaginatedSpecification =
+            new CatalogFilterTextPaginatedSpecification(textFilter ?? string.Empty, itemsPage * pageIndex, itemsPage, brandId, typeId);
+
+        // the implementation below using ForEach and Count. We need a List.
+        var itemsOnPage = await _itemRepository.ListAsync(filterPaginatedSpecification);
+        var totalItems = await _itemRepository.CountAsync(filterSpecification);
+
+        var vm = new CatalogIndexViewModel()
+        {
+            CatalogItems = itemsOnPage.Select(i => new CatalogItemViewModel()
+            {
+                Id = i.Id,
+                Name = i.Name,
+                PictureUri = _uriComposer.ComposePicUri(i.PictureUri),
+                Price = i.Price
+            }).ToList(),
+            Brands = (await GetBrands()).ToList(),
+            Types = (await GetTypes()).ToList(),
+            BrandFilterApplied = brandId ?? 0,
+            TypesFilterApplied = typeId ?? 0,
+            PaginationInfo = new PaginationInfoViewModel()
+            {
+                ActualPage = pageIndex,
+                ItemsPerPage = itemsOnPage.Count,
+                TotalItems = totalItems,
+                TotalPages = int.Parse(Math.Ceiling(((decimal)totalItems / itemsPage)).ToString())
+            }
+        };
+
+        vm.PaginationInfo.Next = (vm.PaginationInfo.ActualPage == vm.PaginationInfo.TotalPages - 1) ? "is-disabled" : "";
+        vm.PaginationInfo.Previous = (vm.PaginationInfo.ActualPage == 0) ? "is-disabled" : "";
+
+        return vm;
+    }
 
     public async Task<IEnumerable<SelectListItem>> GetBrands()
     {

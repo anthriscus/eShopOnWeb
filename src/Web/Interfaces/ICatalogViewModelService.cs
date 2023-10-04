@@ -10,4 +10,6 @@ public interface ICatalogViewModelService
     Task<CatalogIndexViewModel> GetCatalogItems(int pageIndex, int itemsPage, int? brandId, int? typeId);
     Task<IEnumerable<SelectListItem>> GetBrands();
     Task<IEnumerable<SelectListItem>> GetTypes();
+    // try out Added an additional text filter 
+    Task<CatalogIndexViewModel> GetCatalogItemsFiltered(int pageIndex, int itemsPage, int? brandId, int? typeId, string? textFilter);
 }

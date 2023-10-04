@@ -1,0 +1,14 @@
+{
+	"folders": [
+		{
+			"path": "./"
+		},
+		{
+			"path": "../wip"
+		}
+	],
+	"settings": {
+		"dotnet.defaultSolution": "./eShopOnWeb.sln",
+		"terminal.integrated.cwd": "./src"
+	}
+}

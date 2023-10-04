@@ -1,0 +1,13 @@
+# use this for an alternative docker env for testing search filters without editing main/default docker files
+# notice the alternative web docker file with different entrypoint
+# docker compose -f docker-compose.yml -f docker-compose.override.yml -f docker-compose.feature.yml build
+# set the var ${env:GITWORKSPACEFOLDER}=( (Resolve-Path .\).Path -replace "\\", "/")
+services:
+  eshopwebmvc:
+    build:
+      context: .
+      dockerfile: src/Web/DockerFile.feature 
+    environment:
+      - WORKSPACETEST=/json
+    volumes:
+      - ${GITWORKSPACEFOLDER}/../wip/testdata/json:/json:ro
