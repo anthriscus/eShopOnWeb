@@ -20,20 +20,25 @@ public class AppConnectionBuilder : IAppConnectionBuilder
 
         string connectionString = configuration.GetConnectionString(connectionName)?? "";
 
-        ConnectionOptions options = new ConnectionOptions();
         var section = _configuration.GetSection(ConnectionOptions.Connection);
-        _configuration.GetSection(ConnectionOptions.Connection).Bind(options);
-        int commandTimeout = options.CommandTimeout; 
-        SqlConnectionStringBuilder builder = new(connectionString);
-        // Override
-        var overrideUser = _configuration["sql_user"];
-        var overridePassword = _configuration["sql_password"];
-        if (!string.IsNullOrWhiteSpace(overrideUser)) { builder.UserID = overrideUser; }
-        if (!string.IsNullOrWhiteSpace(overridePassword)) { builder.Password = overridePassword; }
-        this.Profile = new ConnectionProfile(builder.ConnectionString, commandTimeout);
-
-        var serviceName = nameof(AppConnectionBuilder);
-        // we are not connected to an ILogger at this stage of the app startup. 
-        Console.WriteLine($"{serviceName} has configured connection string for {connectionName}", serviceName, connectionName);
+        if (section != null)
+        {
+            ConnectionOptions options = new();
+            section.Bind(options);
+            SqlConnectionStringBuilder builder = new(connectionString);
+            // Override
+            var overrideUser = _configuration["sql_user"];
+            var overridePassword = _configuration["sql_password"];
+            if (!string.IsNullOrWhiteSpace(overrideUser)) { builder.UserID = overrideUser; }
+            if (!string.IsNullOrWhiteSpace(overridePassword)) { builder.Password = overridePassword; }
+            this.Profile = new ConnectionProfile(builder.ConnectionString, options.CommandTimeout);
+            // we are not connected to an ILogger at this stage of the app startup. 
+            Console.WriteLine($"{nameof(AppConnectionBuilder)} has configured connection string for {connectionName}");
+        }
+        else
+        {
+            // default to fallback of just the expected connection string
+            this.Profile = new ConnectionProfile(connectionString);
+        }
     }
 }
